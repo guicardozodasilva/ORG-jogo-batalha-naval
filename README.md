@@ -1,5 +1,5 @@
-# Welcome to GitHub Desktop!
+# Jogo de batalha naval!
 
-This is your README. READMEs are where you can communicate what your project is and how to use it.
+Esse é um trabalho da disciplina Organização de Computadores, do Curso Ciência da Computação, da Universidade Federal da Fronteira Sul - UFFS, ministrada pelo Doutor Luciano L. Caimi.
 
-Write your name on line 6, save it, and then head back to GitHub Desktop.
+Alunos: Gustavo Galiazzi Zanella e Guilherme Cardozo da Silva.
