@@ -1,9 +1,12 @@
  	.data
-matriz: 		.space 400					#tamanho total da matriz (10x10x4=400)
-navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-numeros:		.asciz	"0123456789"
-msg_quebra_linha:	.asciz "\n"
-msg_espaco:		.asciz " "
+matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
+#navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
+navios:				.asciz	"3\n0 4 2 2\n0 1 6 4"
+numeros:			.asciz	"0123456789"
+msg_quebra_linha:		.asciz "\n"
+msg_espaco:			.asciz " "
+msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, você tentou inserir o navio "
+msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
 
 	.text
 main: 
@@ -41,19 +44,18 @@ zera_matriz:
 	
 insere_embarcacoes:
 	la	s2, numeros			# endereço inicial da string numeros carregada em s2	
-	lb	t2, (s2)			# carrega o primeiro número da string navios s2 em t2 
+	lb	t2, (s2)			# carrega o primeiro número da string números s2 em t2 
 	beq	a2, a5, imprime_matriz 		# verifica se inseriu todos os navios a2(0) = a5 (qnt_navios)
 	beq	a3, a6, coluna_navio		# se a3 (0) = a6 (8)
 	beq	a3, a7, orientacao_navio	# se a3 = a7 (2). Significa que estamos pegando o número da orientação do navio
 	beq	a3, s4, tamanho_navio		# se a3 = s4 (4). Significa que estamos pegando o tamanho do navio que será inserido
 	beq	a3, s6, linha_navio		# se a3 = s6 (6). Significa que estamos pegando a linha que o navio será inserido
-	#beq	a3, s8, coluna_navio		# se a3 = s8 (8). Significa que estamos pegando a coluna que o navio será inserido
 	addi	s1, s1, 2			# vai para o próximo número da string navios. Pula de 2 em 2 para pular os espações e \n 
 	lb	t1, (s1)			# atualiza valor de t1
 	addi	a3, a3, 2
 	j	insere_embarcacoes
 	
-prox_navio:
+prox_navio:	
 	addi	a2, a2, 1			# incrementa de 2 em 2
 	mul	s11, s7, a4			# S11 (POSICÃO INICIAL NAVIO) = S7 (LINHA) * A4 (10 QNT COLUNA)	 
 	add	s11, s11, s9			# S11 (POSICÃO INICIAL NAVIO) = S11 + S9 (COLUNA)
@@ -63,6 +65,8 @@ prox_navio:
 	j	insere_navio
 	
 insere_navio:
+	lw	t0, (s0)			# carrega o valor da matriz s0 em t0 na respectiva posição 
+	bne	t0, zero, erro_posicao_ocupada	# t0 =! 0, é uma posição ocupada por outro navio
 	beq  	s10, s5, atualiza_registradores	# se s10 (0) = s5 (tamanho navio)
 	beq  	s3, zero, insere_horizontal
 	sw	t3, (s0)			# salva o valor da embarcacão na posição vertical
@@ -84,8 +88,21 @@ atualiza_registradores:
 	addi	s9, zero, 0 			# atualiza o valor de s7 (coluna do navio) para zero
 	addi	t3, t3, 1			# add 1 no registrador t3 (responsavel pelo numero do navio)
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
-	j	insere_embarcacoes
 	
+	jal	final_string_navios
+	
+	j	insere_embarcacoes
+
+# verifica se chegou no final da string navios
+final_string_navios:
+	addi	s1, s1, 1			# vai para o próximo número da string navios para verficar
+						# se chegou no /0 final da string navios
+	lb	t1, (s1)			# atualiza valor de t1
+	beq	t1, zero, imprime_matriz	# se chegou ao final da string, imprime a matriz
+	addi	s1, s1, -1			# volta para a posição que estava para continuar lendo certo os núemros da string
+	lb	t1, (s1)			# atualiza valor de t1
+	ret
+		
 orientacao_navio:
 	beq	t1, t2, navio_horizontal	# se t1(valor 1 ou 0) = t2 (0)
 	addi	s3, zero, 1			# s3 é responsável por armazenar a orientação do navio (vertical ou horizontal)
@@ -102,21 +119,24 @@ navio_horizontal:
 	j	insere_embarcacoes
 
 tamanho_navio:
-	beq	t1, t2, atualiza_valores
+	beq	t1, t2, atualiza_valores	# t1 é o valor do tamanho da string navios na string navios e compara com t2 
+						# que é a string de 0 a 9 para capturar o valor do tamanho do navio
 	addi	s2, s2, 1			# vai para o próximo número da string números
 	lb	t2, (s2)			# carrega número da string navios s2 em t2
 	addi	s5, s5, 1 			# registrador responsável por armazenar o tamanho do navio que será inserido
 	j	tamanho_navio
 	
 linha_navio:
-	beq	t1, t2, atualiza_valores
+	beq	t1, t2, atualiza_valores	# t1 é o valor da linha do navio na string navios e compara com t2 
+						# que é a string de 0 a 9 para capturar o valor do tamanho do navio
 	addi	s2, s2, 1			# vai para o próximo número da string números
 	lb	t2, (s2)			# carrega número da string navios s2 em t2
 	addi	s7, s7, 1 			# registrador responsável por armazenar a linha que o navio que será inserido
 	j	linha_navio
 	
 coluna_navio:
-	beq	t1, t2, prox_navio
+	beq	t1, t2, prox_navio		# t1 é o valor da coluna do navio na string navios e compara com t2 
+						# que é a string de 0 a 9 para capturar o valor do tamanho do navio
 	addi	s2, s2, 1			# vai para o próximo número da string números
 	lb	t2, (s2)			# carrega número da string navios s2 em t2
 	addi	s9, s9, 1 			# registrador responsável por armazenar a coluna que o navio que será inserido
@@ -135,7 +155,42 @@ qnt_embarcacoes:
 	lb	t2, (s2)			# carrega número da string navios s2 em t2
 	addi	a5, a5, 1 			# registrador responsável por armazenar o valor da quantidade de navios que serão inseridos.
 	j	qnt_embarcacoes
-				
+
+erro_posicao_ocupada:
+	la 	a0, msg_erro_ja_possui_navio   # imprime mensagem de erro que ja possui navio na posição
+	li 	a7,4
+	ecall
+	
+	mv 	a0, t3  			# imprime o número do navio que deu conflito
+	li 	a7, 1		
+	ecall
+	
+	la 	a0, msg_quebra_linha  		# quebra linha
+	li 	a7,4
+	ecall
+	
+	la 	a0, msg_quebra_linha  		# quebra linha
+	li 	a7,4
+	ecall
+	
+	la 	a0, msg_linha_e_coluna  	# mensagem da linha e coluna respectiva do conflito
+	li 	a7,4
+	ecall
+	
+	mv 	a0, s7  			# imprime a linha do conflito
+	li 	a7, 1		
+	ecall
+	
+	la 	a0, msg_espaco 			# imprime um espaço
+	li 	a7,4
+	ecall
+	
+	mv 	a0, s9  			# imprime a coluna do conflito
+	li 	a7, 1		
+	ecall
+	
+	j	end
+								
 imprime_matriz:	
 	beq 	t4, a1, end			# se a2 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
@@ -163,4 +218,5 @@ quebra_linha:
 	j	imprime_matriz
 	
 end:
-	ecall		
+	ebreak	
+		
