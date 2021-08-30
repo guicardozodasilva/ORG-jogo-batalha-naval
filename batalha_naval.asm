@@ -1,12 +1,13 @@
  	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-navios:				.asciz	"3\n0 4 2 2\n0 1 6 4"
+navios:				.asciz	"2\n0 2 8 8\n1 9 1 1"
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
 msg_espaco:			.asciz " "
 msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, você tentou inserir o navio "
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
+msg_erro_navio_grande: 		.asciz "Erro! Navio é grande demais para o jogo na respectiva posição inicial dele. O navio mencionado é o "
 
 	.text
 main: 
@@ -62,12 +63,19 @@ prox_navio:
 	mul	s11, s11, s4			# S11 (POSICÃO INICIAL NAVIO) = s11 * s4 (4)
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	add	s0, s0, s11			# adiciona a posição inicial do vetor com s11 (posição que o navio será inserido)
+	
+	add	t5, s7, s5			# t5 = linha (s7) + tamanho navio (s5) e salva em s7
+	blt	a4, t5, erro_navio_grande	# a4 (10) < t5, significa que o navio é maior do que pode ser inserido
+	
+	add	t6, s9, s5 			# t6 = coluna (s9) + tamanho navio (s5) e salva em s9
+	blt	a4, t6, erro_navio_grande	# a4 (10) < t6, significa que o navio é maior do que pode ser inserido
+	
 	j	insere_navio
 	
 insere_navio:
+	beq  	s10, s5, atualiza_registradores	# se s10 (0) = s5 (tamanho navio)
 	lw	t0, (s0)			# carrega o valor da matriz s0 em t0 na respectiva posição 
 	bne	t0, zero, erro_posicao_ocupada	# t0 =! 0, é uma posição ocupada por outro navio
-	beq  	s10, s5, atualiza_registradores	# se s10 (0) = s5 (tamanho navio)
 	beq  	s3, zero, insere_horizontal
 	sw	t3, (s0)			# salva o valor da embarcacão na posição vertical
 	addi	s0, s0, 40			# incrementa o s0 em 1 e vai para a próxima posição vertical do navio
@@ -89,11 +97,14 @@ atualiza_registradores:
 	addi	t3, t3, 1			# add 1 no registrador t3 (responsavel pelo numero do navio)
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	
-	jal	final_string_navios
-	
+	jal	final_string_navios		# verifica se chegou no final da string navios
+							
 	j	insere_embarcacoes
 
 # verifica se chegou no final da string navios
+# isso serve para caso o número de navios informos seja maior
+# do que realmente navios existentes para inserir.
+# Exemplo: 3\n0 4 2 2\n0 1 6 4
 final_string_navios:
 	addi	s1, s1, 1			# vai para o próximo número da string navios para verficar
 						# se chegou no /0 final da string navios
@@ -187,6 +198,23 @@ erro_posicao_ocupada:
 	
 	mv 	a0, s9  			# imprime a coluna do conflito
 	li 	a7, 1		
+	ecall
+	
+	j	end
+
+# quando o navio é maior do que a posição inicial dele suporta. 
+# Exemplo: 0 4 8 8
+erro_navio_grande:
+	la 	a0, msg_erro_navio_grande   # imprime mensagem de erro que ja possui navio na posição
+	li 	a7,4
+	ecall
+	
+	mv 	a0, t3  			# imprime o número do navio que deu conflito
+	li 	a7, 1		
+	ecall
+	
+	la 	a0, msg_quebra_linha  		# quebra linha
+	li 	a7,4
 	ecall
 	
 	j	end
