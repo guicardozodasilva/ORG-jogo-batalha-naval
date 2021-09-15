@@ -1,13 +1,19 @@
  	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
-#navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-navios:				.asciz	"2\n0 2 8 8\n1 9 1 1"
+navios:				.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
+#navios:			.asciz	"2\n0 1 0 0"
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
 msg_espaco:			.asciz " "
 msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, você tentou inserir o navio "
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
 msg_erro_navio_grande: 		.asciz "Erro! Navio é grande demais para o jogo na respectiva posição inicial dele. O navio mencionado é o "
+msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar estado atual da matriz\n3-Reiniciar jogo\n4-Sair do jogo\n\n"
+msg_nova_jogada:		.asciz	"\n\nNova jogada\n"
+msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
+msg_exibir_matriz_atual:	.asciz	"\n\nAbaixo esta a matriz atual\n"
+msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n"
+msg_main:			.asciz	"\n\nEntrou no main!\n"
 
 	.text
 main: 
@@ -102,7 +108,7 @@ atualiza_registradores:
 	j	insere_embarcacoes
 
 # verifica se chegou no final da string navios
-# isso serve para caso o número de navios informos seja maior
+# isso serve para caso o número de navios informado seja maior
 # do que realmente navios existentes para inserir.
 # Exemplo: 3\n0 4 2 2\n0 1 6 4
 final_string_navios:
@@ -160,6 +166,7 @@ atualiza_valores:
 	j	insere_embarcacoes
 	
 qnt_embarcacoes:
+	lb	t2, (s2)			# carrega o primeiro número da string navios s2 em t2 
 	addi	a2, zero, 0			# auxiliar para o for 
 	beq	t1, t2, insere_embarcacoes
 	addi	s2, s2, 1			# vai para o próximo número da string números
@@ -220,7 +227,7 @@ erro_navio_grande:
 	j	end
 								
 imprime_matriz:	
-	beq 	t4, a1, end			# se a2 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
+	beq 	t4, a1, end			# se t4 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
 	lw 	s1, (s0)			# carrega o valor atual do vetorA s0 em s1 
 	mv 	a0, s1  			# imprime inteiro
@@ -246,5 +253,62 @@ quebra_linha:
 	j	imprime_matriz
 	
 end:
+	j	exibe_menu
 	ebreak	
 		
+exibe_menu:
+	la 	a0, msg_menu 			# exibe menu
+	li 	a7,4
+	ecall
+	
+	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
+	ecall	
+	
+	addi	a5, zero , 1
+	beq	a0, a5, nova_jogada
+	
+	addi	a5, zero , 2
+	beq	a0, a5, exibe_matriz_atual
+	
+	addi	a5, zero , 3
+	beq	a0, a5, reinicia_jogo
+	
+	addi	a5, zero , 4
+	beq	a0, a5, finaliza_jogo
+	
+	ecall	
+
+nova_jogada:
+	la 	a0, msg_nova_jogada 			# exibe menu
+	li 	a7,4
+	ecall
+	
+	ebreak
+
+		
+exibe_matriz_atual:
+	la 	a0, msg_exibir_matriz_atual			# exibe menu
+	li 	a7,4
+	ecall
+	
+	addi	t4, zero, 0			# zero contador do for do imprime_matriz
+	addi	a3, zero, 0			# zero contador do for do imprime_matriz
+	la	s0, matriz			# endereço inicial da matriz carregada em s0
+	
+	j	imprime_matriz
+	j	exibe_menu
+
+# erro na funcao qnt_embarcacoes no t2 que zera	
+reinicia_jogo:
+	la 	a0, msg_jogo_reiniciado			# exibe menu
+	li 	a7,4
+	ecall
+	
+	jal	main
+	
+finaliza_jogo:
+	la 	a0, msg_fim_jogo			# exibe menu
+	li 	a7,4
+	ecall
+	
+	ebreak
