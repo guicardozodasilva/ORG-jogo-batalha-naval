@@ -1,7 +1,8 @@
  	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
-navios:				.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
+#navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
 #navios:			.asciz	"2\n0 1 0 0"
+navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 9 2"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
 msg_espaco:			.asciz " "
@@ -9,11 +10,15 @@ msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, vo
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
 msg_erro_navio_grande: 		.asciz "Erro! Navio é grande demais para o jogo na respectiva posição inicial dele. O navio mencionado é o "
 msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar estado atual da matriz\n3-Reiniciar jogo\n4-Sair do jogo\n\n"
-msg_nova_jogada:		.asciz	"\n\nNova jogada\n"
+msg_inserir_linha:		.asciz	"\n\nInsira a linha (valor entre 0 e 9)\n"
+msg_inserir_coluna:		.asciz	"\nInsira a coluna (valor entre 0 e 9)\n"
 msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
 msg_exibir_matriz_atual:	.asciz	"\n\nAbaixo esta a matriz atual\n"
 msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n"
 msg_main:			.asciz	"\n\nEntrou no main!\n"
+acertou_navio_caracter:			.asciz	"X"
+errou_navio_caracter:			.asciz	"-"
+msg_coluna_linha_invalida:	.asciz	"\n\nLinha ou coluna menor que 0 ou maior que 9\nDIGITE NOVAMENTE COM VALORES ENTRE 0 - 9"
 
 	.text
 main: 
@@ -35,7 +40,7 @@ main:
 	addi	s6, zero, 6			# valor para saber a linha que o navio será inserido
 	addi	s7, zero, 0			# registrador responsável por armazenar a linha que o navio que será inserido
 	addi	s8, zero, 8			# valor para saber a coluna que o navio será inserido
-	addi	s9, zero, 0			# registrador responsável por armazenar a linha que o navio que será inserido
+	addi	s9, zero, 0			# registrador responsável por armazenar a coluna que o navio que será inserido
 	addi	s10, zero, 0			# registrador para o loop 
 	addi	t3, zero, 1			# valores das embarcacoes
 	addi	t4, zero, 0
@@ -70,7 +75,7 @@ prox_navio:
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	add	s0, s0, s11			# adiciona a posição inicial do vetor com s11 (posição que o navio será inserido)
 	
-	add	t5, s7, s5			# t5 = linha (s7) + tamanho navio (s5) e salva em s7
+	add	t5, s7, s5			# t5 = linha (s7) + tamanho navio (s5) e salva em t5
 	blt	a4, t5, erro_navio_grande	# a4 (10) < t5, significa que o navio é maior do que pode ser inserido
 	
 	add	t6, s9, s5 			# t6 = coluna (s9) + tamanho navio (s5) e salva em s9
@@ -166,13 +171,49 @@ atualiza_valores:
 	j	insere_embarcacoes
 	
 qnt_embarcacoes:
-	lb	t2, (s2)			# carrega o primeiro número da string navios s2 em t2 
-	addi	a2, zero, 0			# auxiliar para o for 
-	beq	t1, t2, insere_embarcacoes
+	addi	a2, zero, 0			# zera a2, pois usaremos no for do insere_embarcacoes
+	lb	t1, (s1)			# atualiza da string navios s1 em t1
+	beq	t1, a4, calcula_qnt_navios	# se t1(valor atual da string navios) for = a4 (10 é \n na tabela ascii), significa que já lemos a qnt_navios
+	beq	s7, zero, primeiro_caracter 	# s7 = 0, então está no primeiro caracter da string navios
+	
+	addi	s7, s7, 1			# incrementa s7 
+	beq	t1, t2, reinicia_t2
+	addi	s2, s2, 1			# vai para o próximo número da string números
+	lb	t2, (s2)			# carrega número da string navios s2 em t2
+	addi	s9, s9, 1 			# registrador responsável por armazenar o valor da quantidade de navios que serão inseridos.
+	j	qnt_embarcacoes
+
+primeiro_caracter:
+	lb	t2, (s2)			# carrega o primeiro número da string números s2 em t2 
+	beq	t1, t2, reinicia_t2
 	addi	s2, s2, 1			# vai para o próximo número da string números
 	lb	t2, (s2)			# carrega número da string navios s2 em t2
 	addi	a5, a5, 1 			# registrador responsável por armazenar o valor da quantidade de navios que serão inseridos.
+	j	primeiro_caracter
+	
+reinicia_t2:
+	la	s2, numeros			# endereço inicial da string numeros carregada em s2
+	lb	t2, (s2)			# carrega o primeiro número da string navios s2 em t2
+	addi	s1, s1, 1			# vai para o proximo valor da string navios
+	addi	s7, s7, 1			# incrementa s7 para saber que vai para o segundo caracter da string navios
 	j	qnt_embarcacoes
+	
+calcula_qnt_navios:
+	addi	s1, s1, -1			# vai para o proximo valor da string navios
+	bgt	s7, t3, calcula_qnt_navios_2	# s7 (aux p/ saber se tem mais de 1 caracter) > t3 (1), significa que teve 2 caracteres para a qnt de navios
+	addi	s11, zero, 0			# zero o s11, pois uso ele na funcao prox_navio
+	addi	s9, zero, 0			# zero o s9, pois uso ele na funcao prox_navio
+	addi	s7, zero, 0			# zero o s9, pois uso ele na funcao prox_navio
+	j	insere_embarcacoes	
+	
+calcula_qnt_navios_2:
+	mul	s11, a5, a4			# S11 (qnt_navios) = S7 (primeiro caracter string navios) * A4 (10)	 
+	add	s11, s11, s9			# S11 (qnt_navios) = S11 + S9 (segundo caracter string navios)
+	add	a5, zero, s11			# salva em a5 a qnt_navios
+	addi	s11, zero, 0			# zero o s11, pois uso ele na funcao prox_navio
+	addi	s9, zero, 0			# zero o s9, pois uso ele na funcao prox_navio
+	addi	s7, zero, 0			# zero o s9, pois uso ele na funcao prox_navio
+	j	insere_embarcacoes	
 
 erro_posicao_ocupada:
 	la 	a0, msg_erro_ja_possui_navio   # imprime mensagem de erro que ja possui navio na posição
@@ -229,11 +270,37 @@ erro_navio_grande:
 imprime_matriz:	
 	beq 	t4, a1, end			# se t4 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
+	
 	lw 	s1, (s0)			# carrega o valor atual do vetorA s0 em s1 
+	
+	addi	a5, zero, 88
+	addi	a6, zero, 45
+	
+	beq	s1, a5, imprime_string_acertou
+	beq	s1, a6, imprime_string_errou
+	
 	mv 	a0, s1  			# imprime inteiro
 	li 	a7, 1		
 	ecall	
 	
+	j continua_impressao
+
+	
+imprime_string_acertou:
+	la a0, acertou_navio_caracter 		# load address of “str” in a0
+	li a7, 4 				# # code to print a string: 4
+	ecall 					# prints "abc" to console	
+	
+	j continua_impressao
+
+imprime_string_errou:
+	la a0, errou_navio_caracter 		# load address of “str” in a0
+	li a7, 4 				# # code to print a string: 4
+	ecall 	
+	
+	j continua_impressao
+
+continua_impressao:	
 	la 	a0, msg_espaco  		# imprime mensagem
 	li 	a7,4
 	ecall
@@ -243,6 +310,7 @@ imprime_matriz:
 	addi 	s0, s0, 4			# vai para a próxima posição do vetor
 	j 	imprime_matriz	
 	
+				
 quebra_linha:
 	addi	a3, zero, 0			# zera o auxiliar a3 para continuar quebrando linha depois de 10 posiçoes
 	
@@ -262,7 +330,7 @@ exibe_menu:
 	ecall
 	
 	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
-	ecall	
+	ecall				
 	
 	addi	a5, zero , 1
 	beq	a0, a5, nova_jogada
@@ -279,13 +347,60 @@ exibe_menu:
 	ecall	
 
 nova_jogada:
-	la 	a0, msg_nova_jogada 			# exibe menu
+	la 	a0, msg_inserir_linha		# inserir linha msg
 	li 	a7,4
 	ecall
 	
-	ebreak
+	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
+	ecall			
+	
+	add	a1, zero, a0			# salva valor da linha digitada em a1
+	
+	addi	a5, zero, 9
+	bgt  	a1, a5, linha_coluna_invalida	# se a1(linha) > a5(9), linha invalida 
+	blt  	a1, zero, linha_coluna_invalida	# se a1(linha) < zero, linha invalida
+	
+	la 	a0, msg_inserir_coluna		# inserir coluna msg
+	li 	a7,4
+	ecall
+	
+	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
+	ecall			
+	
+	add	a2, zero, a0			# salva valor da coluna digitada em a2
+	bgt  	a2, a5, linha_coluna_invalida	# se a1(linha) > a5(9), linha invalida 
+	blt  	a2, zero, linha_coluna_invalida	# se a1(linha) < zero, linha invalida
+	
+	la	a5, acertou_navio_caracter	# X para marcar que o acertou o tiro em um navio
+	la	a6, errou_navio_caracter	# - para marcar que o errou tiro de um navio
+	lb	a5, (a5)			# carrega o caracter "X" no registrador a5
+	lb	a6, (a6)			# carrega o caracter "-" no registrador a6
+	
+	mul	s11, a1, a4			# S11 (POSICÃO INICIAL NAVIO) = A1 (LINHA) * A4 (10 QNT COLUNA)	 
+	add	s11, s11, a2			# S11 (POSICÃO INICIAL NAVIO) = S11 + S9 (COLUNA)
+	mul	s11, s11, s4			# S11 (POSICÃO INICIAL NAVIO) = s11 * s4 (4)
+	
+	la	s0, matriz			# endereço inicial da matriz carregada em s0
+	add	s0, s0, s11			# adiciona a posição inicial do vetor com s11 (posição que o navio será inserido)
+	lw	t0, (s0)			# carrega o valor da matriz s0 em t0 na respectiva posição 
+	bgt  	t0, zero, acertou_navio		# se o valor da posicao da matriz for > 0, significa que possui um navio
+	
+	sw	a6, (s0)			# salva o valor -8 na posição, indicando que errou do navio
+	
+	j exibe_menu
 
+linha_coluna_invalida:
+	la 	a0, msg_coluna_linha_invalida	# msg coluna ou linha maior que 9
+	li 	a7,4
+	ecall	
 		
+	j nova_jogada	
+				
+acertou_navio:
+	sw	a5, (s0)			# salva o valor -1 na posição, indicando que acertou do navio
+	
+	j exibe_menu
+
 exibe_matriz_atual:
 	la 	a0, msg_exibir_matriz_atual			# exibe menu
 	li 	a7,4
@@ -294,6 +409,9 @@ exibe_matriz_atual:
 	addi	t4, zero, 0			# zero contador do for do imprime_matriz
 	addi	a3, zero, 0			# zero contador do for do imprime_matriz
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
+	addi	a1, zero, 100			# tamanho total da matriz
+	addi	a2, zero, 0			# auxiliar para o for 
+	
 	
 	j	imprime_matriz
 	j	exibe_menu
