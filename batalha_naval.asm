@@ -2,9 +2,10 @@
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
 #navios:			.asciz	"2\n0 1 0 0"
-navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 9 2"  		#string para inserção dos navios
+navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
+msg_limpar_tela:			.asciz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 msg_espaco:			.asciz " "
 msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, você tentou inserir o navio "
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
@@ -13,12 +14,25 @@ msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar est
 msg_inserir_linha:		.asciz	"\n\nInsira a linha (valor entre 0 e 9)\n"
 msg_inserir_coluna:		.asciz	"\nInsira a coluna (valor entre 0 e 9)\n"
 msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
-msg_exibir_matriz_atual:	.asciz	"\n\nAbaixo esta a matriz atual\n"
-msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n"
+msg_exibir_matriz_atual:	.asciz	"\n\nAbaixo está a matriz atual\n\n"
+msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n\n"
 msg_main:			.asciz	"\n\nEntrou no main!\n"
-acertou_navio_caracter:			.asciz	"X"
-errou_navio_caracter:			.asciz	"-"
+acertou_navio_caracter:		.asciz	"X"
+errou_navio_caracter:		.asciz	"-"
 msg_coluna_linha_invalida:	.asciz	"\n\nLinha ou coluna menor que 0 ou maior que 9\nDIGITE NOVAMENTE COM VALORES ENTRE 0 - 9"
+msg_acertou:			.asciz "\nVoce acertou erxatamento isso de navios: "
+recorde_tiros:			.word 	0
+pont_atual_tiros:		.word	0
+recorde_acertos:		.word 	0
+pont_atual_acertos:		.word	0
+msg_recorde:			.asciz	"\n\nRecorde\n"
+msg_recorde_tiros:		.asciz	"Tiros: "
+msg_recorde_acertos:		.asciz	"\nAcertos: "
+msg_recorde_afundados:		.asciz	"\nAfundados: "
+msg_pont_atual:			.asciz	"\n\nSua pontuacao\n"
+msg_pont_atual_tiros:		.asciz	"Tiros: "
+msg_pont_atual_acertos:		.asciz	"\nAcertos: "
+msg_pont_atual_afundados:	.asciz	"\nAfundados: "
 
 	.text
 main: 
@@ -322,15 +336,17 @@ quebra_linha:
 	
 end:
 	j	exibe_menu
-	ebreak	
 		
 exibe_menu:
+	la 	s6, pont_atual_acertos
+	lw	t3, (s6)
+	
 	la 	a0, msg_menu 			# exibe menu
 	li 	a7,4
 	ecall
-	
+			
 	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
-	ecall				
+	ecall	
 	
 	addi	a5, zero , 1
 	beq	a0, a5, nova_jogada
@@ -346,7 +362,27 @@ exibe_menu:
 	
 	ecall	
 
+limpar_tela:
+	la	a0, msg_limpar_tela			
+	li 	a7,4
+	ecall
+	ret
+	
 nova_jogada:
+	jal	limpar_tela
+	
+	la 	s6, pont_atual_acertos
+	lw	t3, (s6)
+	
+	la	t5, pont_atual_tiros		# carrega valor da memória da pontuação atual de tiros em t5
+	lw	t6, (t5)			# carrega o valor da pontuação atual de tiros em t6
+	addi	t6, t6, 1			# incrementa o valor da pontuação atual de tiros
+	sw	t6, (t5)			# armazena em t5 o valor da pontuação atual de tiros
+	lw	t6, (t5)			# carrega o valor da pontuação atual de tiros em t6
+	
+	la 	s9, recorde_tiros		# carrega valor da memória do recorde de tiros em s9
+	lw	s10, (s9)			# carrega o valor do recorde de tiros em s10
+	
 	la 	a0, msg_inserir_linha		# inserir linha msg
 	li 	a7,4
 	ecall
@@ -386,8 +422,14 @@ nova_jogada:
 	bgt  	t0, zero, acertou_navio		# se o valor da posicao da matriz for > 0, significa que possui um navio
 	
 	sw	a6, (s0)			# salva o valor -8 na posição, indicando que errou do navio
+
+	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
 	
 	j exibe_menu
+				
+novo_recorde_tiros:
+	sw	t6, (s9)			# salva o novo recorde de tiros
+	j	exibe_menu
 
 linha_coluna_invalida:
 	la 	a0, msg_coluna_linha_invalida	# msg coluna ou linha maior que 9
@@ -399,25 +441,111 @@ linha_coluna_invalida:
 acertou_navio:
 	sw	a5, (s0)			# salva o valor -1 na posição, indicando que acertou do navio
 	
+	
+	addi	t3, t3, 1
+	sw	t3, (s6)
+	lw	t3, (s6)
+		
+	la 	s2, recorde_acertos
+	lw	t2, (s2)
+	
+	bgt 	t3, t2, novo_recorde_acertos
+	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
+	
 	j exibe_menu
 
+novo_recorde_acertos:
+	sw	t3, (s2)			# salva novo recorde de acertos
+	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
+	j	exibe_menu
+
 exibe_matriz_atual:
-	la 	a0, msg_exibir_matriz_atual			# exibe menu
-	li 	a7,4
-	ecall
-	
+	jal	limpar_tela
+		
 	addi	t4, zero, 0			# zero contador do for do imprime_matriz
 	addi	a3, zero, 0			# zero contador do for do imprime_matriz
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	addi	a1, zero, 100			# tamanho total da matriz
 	addi	a2, zero, 0			# auxiliar para o for 
 	
+	j	imprime_pontuacoes
 	
-	j	imprime_matriz
-	j	exibe_menu
 
+imprime_pontuacoes:
+	la 	a0, msg_recorde			
+	li 	a7,4
+	ecall
+
+	la 	a0, msg_recorde_tiros			
+	li 	a7,4
+	ecall
+	la 	s2, recorde_tiros		# carrega o endereço de memória do recorde de tiros em s2		
+	lw	t2, (s2)			# carrega o valor do recorde de tiros em t2	
+	mv 	a0, t2  			# imprime o recorde de tiros
+	li 	a7, 1		
+	ecall	
+	
+	la 	a0, msg_recorde_acertos			
+	li 	a7,4
+	ecall
+	la 	s2, recorde_acertos		# carrega o endereço de memória do recorde de acertos em s2		
+	lw	t2, (s2)			# carrega o valor do recorde de acertos em t2	
+	mv 	a0, t2  			# imprime o recorde de acertos
+	li 	a7, 1		
+	ecall	
+	
+	#la 	a0, msg_recorde_afundados		# exibe menu
+#	li 	a7,4
+#	ecall
+		
+	
+	la 	a0, msg_pont_atual			# exibe menu
+	li 	a7,4
+	ecall
+
+	la 	a0, msg_pont_atual_tiros	
+	li 	a7,4
+	ecall
+	la	t5, pont_atual_tiros		# carrega o endereço de memória da pontuação atual de tiros em t5
+	lw	t6, (t5)			# carrega o valor da pontuação atual de tiros em t5
+	mv 	a0, t6  			# imprime a pontuação atual de tiros
+	li 	a7, 1		
+	ecall	
+			
+	la 	a0, msg_pont_atual_acertos	
+	li 	a7,4
+	ecall
+	la	s6, pont_atual_acertos		# carrega o endereço de memória da pontuação atual de acertos em s6
+	lw	t3, (s6)			# carrega o valor da pontuação atual de acertos em t3
+	mv 	a0, t3  			# imprime a pontuação atual de acertos
+	li 	a7, 1		
+	ecall
+	
+#	la 	a0, msg_pont_atual_acertos			# exibe menu
+#	li 	a7,4
+#	ecall
+	
+#	la 	a0, msg_pont_atual_afundados		# exibe menu
+#	li 	a7,4
+#	ecall
+
+	la 	a0, msg_quebra_linha  		# imprime mensagem
+	li 	a7,4
+	ecall
+	la 	a0, msg_quebra_linha  		# imprime mensagem
+	li 	a7,4
+	ecall
+	
+	la 	a0, msg_exibir_matriz_atual			
+	li 	a7,4
+	ecall
+
+	j	imprime_matriz
+	
+	
 # erro na funcao qnt_embarcacoes no t2 que zera	
 reinicia_jogo:
+	jal	limpar_tela
 	la 	a0, msg_jogo_reiniciado			# exibe menu
 	li 	a7,4
 	ecall
@@ -426,6 +554,8 @@ reinicia_jogo:
 
 # zero todos os registrados para reiniciar o jogo
 reinicia_registradores:
+	sw	zero, (s6)			# recorde atual salva no recorde global de tiro
+	sw	zero, (t5)			# armazena em t5 o valor da pontuação atual de tiros
 	addi	t0, zero, 0
 	addi	t1, zero, 0
 	addi	t2, zero, 0
@@ -453,10 +583,11 @@ reinicia_registradores:
 	addi	t4, zero, 0
 	addi	t5, zero, 0
 	addi	t6, zero, 0
-				
+			
 	j	main
 	
 finaliza_jogo:
+	jal	limpar_tela
 	la 	a0, msg_fim_jogo			# exibe menu
 	li 	a7,4
 	ecall
