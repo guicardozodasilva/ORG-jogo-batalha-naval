@@ -10,7 +10,7 @@ msg_espaco:			.asciz " "
 msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, você tentou inserir o navio "
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
 msg_erro_navio_grande: 		.asciz "Erro! Navio é grande demais para o jogo na respectiva posição inicial dele. O navio mencionado é o "
-msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar estado atual da matriz\n3-Reiniciar jogo\n4-Sair do jogo\n\n"
+msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar estado atual da matriz\n3-Mostrar matriz com as posições dos navios\n4-Reiniciar jogo\n5-Sair do jogo\n\n"
 msg_inserir_linha:		.asciz	"\n\nInsira a linha (valor entre 0 e 9)\n"
 msg_inserir_coluna:		.asciz	"\nInsira a coluna (valor entre 0 e 9)\n"
 msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
@@ -19,12 +19,17 @@ msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n\n"
 msg_main:			.asciz	"\n\nEntrou no main!\n"
 acertou_navio_caracter:		.asciz	"X"
 errou_navio_caracter:		.asciz	"-"
+nao_exibe_pos_matriz_caracter:	.asciz	"?"
 msg_coluna_linha_invalida:	.asciz	"\n\nLinha ou coluna menor que 0 ou maior que 9\nDIGITE NOVAMENTE COM VALORES ENTRE 0 - 9"
 msg_acertou:			.asciz "\nVoce acertou erxatamento isso de navios: "
 recorde_tiros:			.word 	0
 pont_atual_tiros:		.word	0
 recorde_acertos:		.word 	0
 pont_atual_acertos:		.word	0
+recorde_afundados:		.word 	0
+pont_atual_afundados:		.word	0
+qnt_navios:			.word	0
+posso_exibir_pos_navios:	.word	1
 msg_recorde:			.asciz	"\n\nRecorde\n"
 msg_recorde_tiros:		.asciz	"Tiros: "
 msg_recorde_acertos:		.asciz	"\nAcertos: "
@@ -130,7 +135,7 @@ reinicia_t2:
 #		
 #############################################################	
 calc_qnt_embarcacoes:
-	addi	s1, s1, -1					# vai para o proximo valor da string navios
+	addi	s1, s1, -1					# retorna para o valor anterior da string navios
 	bgt	s7, t3, calc_qnt_embarcacoes_superior_a_9	# s7 (aux p/ saber se tem mais de 1 caracter) > t3 (1), significa que teve 2 caracteres para a qnt de navios
 	addi	s11, zero, 0					# zero o s11, pois uso ele na funcao calc_posicao_navio
 	addi	s9, zero, 0					# zero o s9, pois uso ele na funcao calc_posicao_navio
@@ -162,7 +167,11 @@ calc_qnt_embarcacoes_superior_a_9:
 #############################################################
 percorre_string_navios:
 	la	s2, numeros			# endereço inicial da string numeros carregada em s2	
-	lb	t2, (s2)			# carrega o primeiro número da string números s2 em t2 
+	lb	t2, (s2)			# carrega o primeiro número da string números s2 em t2
+	la	s11, qnt_navios			# carrega o valor da memória do .word qnt_navios
+	addi	a5, a5, 1			# incrementar 1 na qnt_navios para o laço for da função verifica_se_navio_afundou
+	sw	a5, (s11) 			# salva a qnt_navios que serão inseridos de a5 para o .word qnt_navios
+	addi	a5, a5, -1			# decrementa em 1 o valor de a5
 	beq	a2, a5, imprime_matriz 		# verifica se inseriu todos os navios a2(0) = a5 (qnt_navios)
 	beq	a3, a7, orientacao_navio	# se a3 = a7 (2). Significa que estamos pegando o número da orientação do navio
 	beq	a3, s4, tamanho_navio		# se a3 = s4 (4). Significa que estamos pegando o tamanho do navio que será inserido
@@ -254,6 +263,7 @@ final_string_navios:
 	addi	s1, s1, -1			# volta para a posição que estava para continuar lendo certo os núemros da string
 	lb	t1, (s1)			# atualiza valor de t1
 	ret
+	
 #############################################################	
 #
 # linha_navio
@@ -439,9 +449,28 @@ imprime_matriz:
 	beq	s1, a5, imprime_string_acertou		# se o valor lido da matriz for igual a 88 (é o caracter "X" na tabela ASCII), imprime o caracter "X"
 	beq	s1, a6, imprime_string_errou		# se o valor lido da matriz for igual a 45 (é o caracter "-" na tabela ASCII), imprime o caracter "-"
 	
+	la 	s5, posso_exibir_pos_navios		# carrega valor da memória da .word 
+	lw	s5, (s5) 
+	beq	s5, zero, nao_exibe_pos_navios		# se s5 = 0, não exibe posição dos navios 		
 	mv 	a0, s1  				# imprime valor da matriz
 	li 	a7, 1		
 	ecall	
+	
+	j continuacao_imprime_matriz
+
+#############################################################	
+#
+# nao_exibe_pos_navios
+# imprime o caracter "?" na matriz, 
+# se selecionado no menu a opção
+# 2-Mostrar estado atual da matriz
+#
+#############################################################		
+nao_exibe_pos_navios:	
+	
+	la 	a0, nao_exibe_pos_matriz_caracter	# imprime o caracter "?" na matriz 
+	li 	a7, 4 				
+	ecall 					
 	
 	j continuacao_imprime_matriz
 	
@@ -530,9 +559,12 @@ exibe_menu:
 	beq	a0, a5, exibe_matriz_atual
 	
 	addi	a5, zero , 3
-	beq	a0, a5, reinicia_jogo
+	beq	a0, a5, exibe_posicao_navios
 	
 	addi	a5, zero , 4
+	beq	a0, a5, reinicia_jogo
+	
+	addi	a5, zero , 5
 	beq	a0, a5, finaliza_jogo
 	
 	ecall	
@@ -558,6 +590,11 @@ limpar_tela:
 #############################################################		
 nova_jogada:
 	jal	limpar_tela
+	
+	addi	a4, zero, 10
+	
+	la	s6, pont_atual_afundados
+	sw	zero, (s6)			# a cada nova jogada, zera a pontuação atual de navios afundados
 	
 	la 	s6, pont_atual_acertos		# carrega valor da memória da pontuação atual de acertos em s6
 	lw	t3, (s6)			# carrega o valor da pontuação atual de acertos em t3
@@ -613,6 +650,9 @@ nova_jogada:
 
 	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
 	
+	jal	atualizar_regs_para_ver_se_navio_afundou
+	jal	verifica_se_navio_afundou
+	
 	j exibe_menu
 
 #############################################################	
@@ -624,6 +664,8 @@ nova_jogada:
 #############################################################				
 novo_recorde_tiros:
 	sw	t6, (s9)			# salva o novo recorde de tiros
+	jal	atualizar_regs_para_ver_se_navio_afundou
+	jal	verifica_se_navio_afundou
 	j	exibe_menu
 
 #############################################################	
@@ -662,6 +704,9 @@ acertou_navio:
 	bgt 	t3, t2, novo_recorde_acertos
 	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
 	
+	jal	atualizar_regs_para_ver_se_navio_afundou
+	jal	verifica_se_navio_afundou
+	
 	j exibe_menu
 
 #############################################################	
@@ -674,6 +719,8 @@ acertou_navio:
 novo_recorde_acertos:
 	sw	t3, (s2)			# salva novo recorde de acertos
 	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
+	jal	atualizar_regs_para_ver_se_navio_afundou
+	jal	verifica_se_navio_afundou
 	j	exibe_menu
 
 #############################################################	
@@ -685,14 +732,48 @@ novo_recorde_acertos:
 #############################################################	
 exibe_matriz_atual:
 	jal	limpar_tela
+	
+	la 	s5, posso_exibir_pos_navios	# carrega valor da memória da .word posso_exibir_pos_navios
+	sw	zero, (s5)			# salva o valor 0 no .word posso_exibir_pos_navios
 		
+	jal	atualiza_regs_para_imprimir_matriz
+	
+	j	imprime_pontuacoes
+
+#############################################################	
+#
+# exibe_posicao_navios
+# exibe a matriz com as  
+# posições dos navios
+#
+#############################################################	
+exibe_posicao_navios:
+	jal	limpar_tela
+	
+	la 	s5, posso_exibir_pos_navios	# carrega valor da memória da .word posso_exibir_pos_navios
+	addi	a3, zero, 1
+	sw	a3, (s5)			# salva o valor 1 no .word posso_exibir_pos_navios
+	
+	jal	atualiza_regs_para_imprimir_matriz
+	
+	j	imprime_pontuacoes
+	
+#############################################################	
+#
+# atualiza_regs_para_imprimir_matriz
+# como o próprio nome diz,
+# atualiza os registradores
+# que serão utilizados para 
+# imprimir a matriz	
+#
+#############################################################	
+atualiza_regs_para_imprimir_matriz:
 	addi	t4, zero, 0			# zero contador do for do imprime_matriz
 	addi	a3, zero, 0			# zero contador do for do imprime_matriz
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	addi	a1, zero, 100			# tamanho total da matriz
 	addi	a2, zero, 0			# auxiliar para o for 
-	
-	j	imprime_pontuacoes
+	ret	
 	
 #############################################################	
 #
@@ -701,6 +782,12 @@ exibe_matriz_atual:
 #
 #############################################################	
 imprime_pontuacoes:
+	
+	addi	t4, zero, 0
+	addi	a1, zero, 100
+	addi	a3, zero, 0
+	addi	a4, zero, 10
+	
 	la 	a0, msg_recorde			
 	li 	a7,4
 	ecall
@@ -723,9 +810,14 @@ imprime_pontuacoes:
 	li 	a7, 1		
 	ecall	
 	
-	#la 	a0, msg_recorde_afundados		# exibe menu
-#	li 	a7,4
-#	ecall
+	la 	a0, msg_recorde_afundados		
+	li 	a7,4
+	ecall
+	la 	s2, recorde_afundados		# carrega o endereço de memória do recorde de navios afundados em s2		
+	lw	t2, (s2)			# carrega o valor do recorde de navios afundados em t2	
+	mv 	a0, t2  			# imprime o recorde de navios afundados
+	li 	a7, 1		
+	ecall
 		
 	
 	la 	a0, msg_pont_atual			# exibe menu
@@ -750,13 +842,15 @@ imprime_pontuacoes:
 	li 	a7, 1		
 	ecall
 	
-#	la 	a0, msg_pont_atual_acertos			# exibe menu
-#	li 	a7,4
-#	ecall
-	
-#	la 	a0, msg_pont_atual_afundados		# exibe menu
-#	li 	a7,4
-#	ecall
+	la 	a0, msg_pont_atual_afundados			
+	li 	a7,4
+	ecall
+	la	s6, pont_atual_afundados	# carrega o endereço de memória da pontuação atual de navios afundados em s6
+	lw	t3, (s6)			# carrega o valor da pontuação atual de navios afundados em t3
+	mv 	a0, t3  			# imprime a pontuação atual de navios afundados
+	li 	a7, 1		
+	ecall
+		
 
 	la 	a0, msg_quebra_linha  		# imprime mensagem
 	li 	a7,4
@@ -771,7 +865,110 @@ imprime_pontuacoes:
 
 	j	imprime_matriz
 	
+#############################################################	
+#
+# verifica_se_navio_afundou
+# função responsável por verificar se 
+# algum navio afundou
+#
+#############################################################	
+verifica_se_navio_afundou:
+	beq	a3, a4, so_para_dar_ret 		# se a3 (1) = a4 (qnt_navios+1), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
+	beq 	t4, a1, navio_totalmente_afundado	# se t4 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1	
+	lw 	s1, (s0)				# carrega o valor atual do vetorA s0 em s1 
+	beq	a3, s1, existe_partes_do_navio_ainda	# se a3 = s1 (valor atual da matriz), significa que ainda existe partes do navio na matriz, ou seja, ele não foi totalmente afundado
+	addi	t4, t4, 1
+	addi	s0, s0, 4
+	j	verifica_se_navio_afundou
+
+#############################################################	
+#
+# navio_totalmente_afundado
+# função responsável salvar a pont_atual_afundados
+# e verificar se foi o recorde de navio afundados
+#
+#############################################################		
+navio_totalmente_afundado:
+	la	s6, pont_atual_afundados		# carrega o valor da memória do pont_atual_afundados no registrador s6
+	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+	addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
+	sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
+	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+		
+	la 	s2, recorde_afundados			# carrega o valor da memória do recorde_afundados no registrador s2
+	lw	t2, (s2)				# carrega o valor de recordes de navios afundados no registrador t2
 	
+	bgt 	t3, t2, novo_recorde_afundados 		# se a pontuação atual de afundados(t3) > recorde afundados(t2), então salva novo recorde de afundados	
+	
+	j 	atualiza_regs_para_verificar_se_prox_navio_afundou
+
+#############################################################	
+#
+# novo_recorde_afundados
+# função responsável salvar
+# o novo recorde de navios afundados
+#
+#############################################################	
+novo_recorde_afundados:
+	sw	t3, (s2)	# salva a pontuação atual de afundados no recorde de afundados
+	j	atualiza_regs_para_verificar_se_prox_navio_afundou
+
+#############################################################	
+#
+# existe_partes_do_navio_ainda
+# função responsável por pular
+# para a função que atualiza 
+# os registradores para verificar
+# se o próximo navio afundou
+#
+#############################################################	
+existe_partes_do_navio_ainda:
+	j	atualiza_regs_para_verificar_se_prox_navio_afundou
+
+#############################################################	
+#
+# atualizar_regs_para_ver_se_navio_afundou
+# função responsável por atualizar 
+# registradores para verificar se 
+# algum navio afundou
+#
+#############################################################	
+atualizar_regs_para_ver_se_navio_afundou:
+	
+	la	s0, matriz				# carrega o endereço de memória da matriz em s0
+	lw 	s1, (s0)				# carrega o valor atual do vetorA s0 em s1 
+	addi	a3, zero, 1				# valor 1 no registrador aux a3 do laço for da função verifica_se_navio_afundou
+	la	a4, qnt_navios				# carrega o endereço de memória da qnt_navios em a4
+	lw	a4, (a4)				# carrega o valor da qnt_navios em a4
+	addi	t4, zero, 0				# zera o registrador t4
+	addi	a1, zero, 100				# salva o valor 100 no registrador a1
+
+	ret
+
+#############################################################	
+#
+# atualiza_regs_para_verificar_se_prox_navio_afundou
+# função responsável por atualizar
+# registradores para verificar se 
+# o próximo navio afundou
+#
+#############################################################	
+atualiza_regs_para_verificar_se_prox_navio_afundou:
+	la	s0, matriz				# carrega o endereço de memória da matriz em s0
+	lw 	s1, (s0)				# carrega o valor atual do vetorA s0 em s1 
+	addi	t4, zero, 0				# zera o registrador t4
+	addi	a3, a3, 1				# incrementa o aux a3 para o for
+	j	verifica_se_navio_afundou
+
+#############################################################	
+#
+# so_para_dar_ret
+#
+#############################################################				
+so_para_dar_ret:
+	ret
+			
+						
 #############################################################	
 #
 # reinicia_jogo
@@ -797,6 +994,8 @@ reinicia_jogo:
 reinicia_registradores:
 	sw	zero, (s6)			# zera a pontuação atual dos acertos
 	sw	zero, (t5)			# zera a pontuação atual dos tiros
+	la	s6, pont_atual_afundados
+	sw	zero, (s6)			# zera a pontuação atual de navios afundados
 	addi	t0, zero, 0
 	addi	t1, zero, 0
 	addi	t2, zero, 0
