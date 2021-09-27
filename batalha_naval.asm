@@ -1,7 +1,16 @@
- 	.data
+#############################################################
+#
+# AUTORES DO CÓDIGO						
+# GUILHERME CARDOZO DA SILVA - MATRÍCULA 1711100024
+# GUSTAVO GALEAZZI ZANELLA - MATRÍCULA 1621101059
+#	
+#############################################################
+ 	
+	 	
+	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-navios:			.asciz	"1\n0 1 0 0"
+navios:				.asciz	"1\n0 1 0 0"
 #navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
@@ -11,6 +20,7 @@ msg_erro_ja_possui_navio: 	.asciz "Erro! Em uma posição que já possuía navio, vo
 msg_linha_e_coluna:		.asciz "Linha e coluna respectiva do conflito: "
 msg_erro_navio_grande: 		.asciz "Erro! Navio é grande demais para o jogo na respectiva posição inicial dele. O navio mencionado é o "
 msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar estado atual da matriz\n3-Mostrar matriz com as posições dos navios\n4-Reiniciar jogo\n5-Sair do jogo\n\n"
+msg_menu_fim_jogo:			.asciz	"\n\nDigite a opcao que deseja:\n1-Mostrar estado atual da matriz\n2-Mostrar matriz com as posições dos navios\n3-Reiniciar jogo\n4-Sair do jogo\n\n"
 msg_inserir_linha:		.asciz	"\n\nInsira a linha (valor entre 0 e 9)\n"
 msg_inserir_coluna:		.asciz	"\nInsira a coluna (valor entre 0 e 9)\n"
 msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
@@ -43,6 +53,7 @@ msg_pont_atual_afundados:	.asciz	"\nAfundados: "
 msg_pont_atual_linha_coluna:	.asciz	"\nÚltimo tiro: "
 msg_nao_ha_ultima_tiro_linha_coluna:	.asciz	"Você ainda não fez seu primeiro tiro para eu lhe mostrar essa informação"
 msg_todos_navios_afundados:	.asciz	"\nParabéns, você já afundou todos os navios\n\n" 
+jogo_acabou:			.word 0
 
 	.text
 	
@@ -451,7 +462,7 @@ erro_posicao_ocupada:
 #############################################################								
 imprime_matriz:
 		
-	beq 	t4, a1, exibe_menu			# se t4 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
+	beq 	t4, a1, verifica_qual_menu_exibir	# se t4 (0) = a1 (100), acaba o laço de repetição e verifica qual menu exibir. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha_matriz 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
 	
 	lw 	s1, (s0)				# carrega o valor atual do vetorA s0 em s1 
@@ -470,6 +481,22 @@ imprime_matriz:
 	ecall	
 	
 	j continuacao_imprime_matriz
+
+#############################################################	
+#
+# verifica_qual_menu_exibir
+# função responsável por verificar 
+# se vai exibir o menu normal (com a opção nova jogada)
+# ou o menu fim de jogo (sem a opção nova jogada)
+#
+#############################################################		
+verifica_qual_menu_exibir:
+	la 	s5, jogo_acabou			# carrega valor da memória da .word jogo_acabou
+	lw	a3, (s5)			# carrega o valor 0 ou 1 do .word jogo_acabou em a3
+	
+	beq	a3, zero, exibe_menu		# se a3 (jogo acabou) = zero, significa que o jogo ainda não acabou, então exibe o menu normal (que tem a opção nova jogada)		
+	j	exibe_menu_fim_jogo		# se não exibe o menu de fim de jogo, o qual não possui a opçao nova jogada
+
 
 #############################################################	
 #
@@ -582,6 +609,39 @@ exibe_menu:
 	beq	a0, a5, finaliza_jogo
 	
 	ecall	
+
+#############################################################	
+#
+# exibe_menu_fim_jogo
+# função responsável por exibir o menu
+# quando afundou todos os navios
+# esse menu não tem a opção nova jogada
+#
+#############################################################	
+exibe_menu_fim_jogo:
+	la 	s6, pont_atual_acertos
+	lw	t3, (s6)
+	
+	la 	a0, msg_menu_fim_jogo 			# exibe menu
+	li 	a7,4
+	ecall
+			
+	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
+	ecall	
+		
+	addi	a5, zero , 1
+	beq	a0, a5, exibe_matriz_atual
+	
+	addi	a5, zero , 2
+	beq	a0, a5, exibe_posicao_navios
+	
+	addi	a5, zero , 3
+	beq	a0, a5, reinicia_jogo
+	
+	addi	a5, zero , 4
+	beq	a0, a5, finaliza_jogo
+	
+	ecall
 
 #############################################################	
 #
@@ -1007,6 +1067,9 @@ verifica_se_navio_afundou:
 navio_totalmente_afundado:
 	la	s6, pont_atual_afundados		# carrega o valor da memória do pont_atual_afundados no registrador s6
 	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+	addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
+	sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
+	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
 	
 	la 	s2, qnt_navios			# carrega o endereço de memória da quantidade de navios em s2		
 	lw	t2, (s2)			# carrega o valor da quantidade de navios em t2
@@ -1014,9 +1077,9 @@ navio_totalmente_afundado:
 	
 	beq	t3, t2, todos_navios_afundados	# se t3 (navios afundados) = t2 (qnt_navios), significa que ja afundou todos os navios 
 	
-	addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
-	sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
-	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+	#addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
+	#sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
+	#lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
 	
 	j 	atualiza_regs_para_verificar_se_prox_navio_afundou
 
@@ -1031,7 +1094,11 @@ todos_navios_afundados:
 	li 	a7,4
 	ecall	
 	
-	j exibe_menu	
+	la 	s5, jogo_acabou			# carrega valor da memória da .word jogo_acabou
+	addi	a3, zero, 1
+	sw	a3, (s5)			# salva o valor 1 no .word jogo_acabou
+	
+	j exibe_menu_fim_jogo	
 
 #############################################################	
 #
@@ -1131,6 +1198,8 @@ reinicia_registradores:
 	sw	zero, (s6)
 	la	s6, ultimo_tiro_coluna
 	sw	zero, (s6)
+	la 	s6, jogo_acabou			# carrega valor da memória da .word jogo_acabou
+	sw	zero, (s6)			# zera o meu identificador se o jogo acabou
 	addi	t0, zero, 0
 	addi	t1, zero, 0
 	addi	t2, zero, 0
