@@ -11,7 +11,8 @@
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
 #navios:				.asciz	"1\n0 1 0 0"
-navios:				.asciz	"2\n1 4 2 2\n0 3 3 0"
+#navios:				.asciz	"2\n1 4 2 2\n0 3 3 0"
+navios:				.asciz	"2\n1 5 1 1\n0 1 2 2"
 #navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
@@ -467,8 +468,7 @@ erro_posicao_ocupada:
 # e com os tiros que serão realizados
 #
 #############################################################								
-imprime_matriz:
-		
+imprime_matriz:		
 	beq 	t4, a1, verifica_qual_menu_exibir	# se t4 (0) = a1 (100), acaba o laço de repetição e verifica qual menu exibir. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha_matriz 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
 	
@@ -514,7 +514,6 @@ verifica_qual_menu_exibir:
 #
 #############################################################		
 nao_exibe_pos_navios:	
-	
 	la 	a0, nao_exibe_pos_matriz_caracter	# imprime o caracter "?" na matriz 
 	li 	a7, 4 				
 	ecall 					
@@ -588,8 +587,7 @@ continuacao_imprime_matriz:
 # e ir para a opção selecionada
 #
 #############################################################			
-exibe_menu:
-	
+exibe_menu:	
 	la 	s6, pont_atual_acertos
 	lw	t3, (s6)
 	
@@ -781,10 +779,8 @@ acertou_navio:
 #
 #############################################################	
 errou_navio:
-	
 	jal	atualizar_regs_para_ver_se_navio_afundou
-	jal	verifica_se_navio_afundou
-
+	jal	verifica_se_navio_afundou	
 	j exibe_menu
 
 #############################################################	
@@ -846,7 +842,6 @@ atualiza_regs_para_imprimir_matriz:
 #
 #############################################################	
 imprime_pontuacoes:
-	
 	addi	t4, zero, 0
 	addi	a1, zero, 100
 	addi	a3, zero, 0
@@ -928,9 +923,9 @@ continuacao_imprime_pontuacao:
 	la 	a0, msg_pont_atual_afundados			
 	li 	a7,4
 	ecall
-	la	s6, pont_atual_afundados	# carrega o endereço de memória da pontuação atual de navios afundados em s6
-	lw	t3, (s6)			# carrega o valor da pontuação atual de navios afundados em t3
-	mv 	a0, t3  			# imprime a pontuação atual de navios afundados
+	la	t5, pont_atual_afundados	# carrega o endereço de memória da pontuação atual de navios afundados em s6
+	lw	t6, (t5)			# carrega o valor da pontuação atual de navios afundados em t3
+	mv 	a0, t6  			# imprime a pontuação atual de navios afundados
 	li 	a7, 1		
 	ecall
 	
@@ -1029,7 +1024,6 @@ salva_novo_recorde:
 #
 #############################################################		
 nao_ha_ultima_tiro_linha_coluna:
-
 	la 	a0, msg_nao_ha_ultima_tiro_linha_coluna 		# imprime mensagem
 	li 	a7,4
 	ecall
@@ -1072,8 +1066,9 @@ verifica_se_navio_afundou:
 #
 #############################################################		
 navio_totalmente_afundado:
+	
 	la	s6, pont_atual_afundados		# carrega o valor da memória do pont_atual_afundados no registrador s6
-	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3	
 	addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
 	sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
 	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
@@ -1083,10 +1078,6 @@ navio_totalmente_afundado:
 	addi	t2, t2, -1			# decrementa qnt de navio, pois estava em +1
 	
 	beq	t3, t2, todos_navios_afundados	# se t3 (navios afundados) = t2 (qnt_navios), significa que ja afundou todos os navios 
-	
-	#addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
-	#sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
-	#lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
 	
 	j 	atualiza_regs_para_verificar_se_prox_navio_afundou
 
@@ -1139,7 +1130,6 @@ existe_partes_do_navio_ainda:
 #
 #############################################################	
 atualizar_regs_para_ver_se_navio_afundou:
-	
 	la	s0, matriz				# carrega o endereço de memória da matriz em s0
 	lw 	s1, (s0)				# carrega o valor atual do vetorA s0 em s1 
 	addi	a3, zero, 1				# valor 1 no registrador aux a3 do laço for da função verifica_se_navio_afundou
@@ -1147,7 +1137,9 @@ atualizar_regs_para_ver_se_navio_afundou:
 	lw	a4, (a4)				# carrega o valor da qnt_navios em a4
 	addi	t4, zero, 0				# zera o registrador t4
 	addi	a1, zero, 100				# salva o valor 100 no registrador a1
-
+	la	s6, pont_atual_afundados		# carrega o valor da memória do pont_atual_afundados no registrador s6
+	sw	zero, (s6)				# zera a pont atual de navios afundados, pq em cada loop da funcao 
+							# navio_totalmente_afundado, ele calcula o valor atual de navios afundados
 	ret
 
 #############################################################	
@@ -1172,8 +1164,7 @@ atualiza_regs_para_verificar_se_prox_navio_afundou:
 #############################################################				
 so_para_dar_ret:
 	ret
-			
-						
+								
 #############################################################	
 #
 # reinicia_jogo
@@ -1197,8 +1188,10 @@ reinicia_jogo:
 #
 #############################################################	
 reinicia_registradores:
+	la	s6, pont_atual_acertos
 	sw	zero, (s6)			# zera a pontuação atual dos acertos
-	sw	zero, (t5)			# zera a pontuação atual dos tiros
+	la	s6, pont_atual_tiros
+	sw	zero, (s6)			# zera a pontuação atual dos tiros
 	la	s6, pont_atual_afundados
 	sw	zero, (s6)			# zera a pontuação atual de navios afundados
 	la	s6, ultimo_tiro_linha
