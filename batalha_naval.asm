@@ -1,8 +1,8 @@
  	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-#navios:			.asciz	"2\n0 1 0 0"
-navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
+navios:			.asciz	"1\n0 1 0 0"
+#navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
 msg_limpar_tela:		.asciz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -30,6 +30,8 @@ recorde_afundados:		.word 	0
 pont_atual_afundados:		.word	0
 qnt_navios:			.word	0
 posso_exibir_pos_navios:	.word	1
+ultimo_tiro_linha:		.word	-1
+ultimo_tiro_coluna:		.word	-1
 msg_recorde:			.asciz	"\n\nRecorde\n"
 msg_recorde_tiros:		.asciz	"Tiros: "
 msg_recorde_acertos:		.asciz	"\nAcertos: "
@@ -38,8 +40,18 @@ msg_pont_atual:			.asciz	"\n\nSua pontuacao\n"
 msg_pont_atual_tiros:		.asciz	"Tiros: "
 msg_pont_atual_acertos:		.asciz	"\nAcertos: "
 msg_pont_atual_afundados:	.asciz	"\nAfundados: "
+msg_pont_atual_linha_coluna:	.asciz	"\nÚltimo tiro: "
+msg_nao_ha_ultima_tiro_linha_coluna:	.asciz	"Você ainda não fez seu primeiro tiro para eu lhe mostrar essa informação"
+msg_todos_navios_afundados:	.asciz	"\nParabéns, você já afundou todos os navios\n\n" 
 
 	.text
+	
+#############################################################
+#
+# main						
+# função que inicia o programa
+#	
+#############################################################
 main: 
 	la	s0, matriz			# endereço inicial da matriz carregada em s0
 	la	s1, navios			# endereço inicial da string navios carregada em s1
@@ -437,7 +449,8 @@ erro_posicao_ocupada:
 # e com os tiros que serão realizados
 #
 #############################################################								
-imprime_matriz:	
+imprime_matriz:
+		
 	beq 	t4, a1, exibe_menu			# se t4 (0) = a1 (100), acaba o laço de repetição. Inicialmente a2 = 0 e vai somando 1
 	beq	a3, a4, quebra_linha_matriz 		# se a3 (0) = a4 (10), acaba o laço e vai para a função quebra_linha. Inicialmente o a3 = 0 e vai somando 1 
 	
@@ -542,6 +555,7 @@ continuacao_imprime_matriz:
 #
 #############################################################			
 exibe_menu:
+	
 	la 	s6, pont_atual_acertos
 	lw	t3, (s6)
 	
@@ -593,9 +607,6 @@ nova_jogada:
 	
 	addi	a4, zero, 10
 	
-	la	s6, pont_atual_afundados
-	sw	zero, (s6)			# a cada nova jogada, zera a pontuação atual de navios afundados
-	
 	la 	s6, pont_atual_acertos		# carrega valor da memória da pontuação atual de acertos em s6
 	lw	t3, (s6)			# carrega o valor da pontuação atual de acertos em t3
 	
@@ -605,9 +616,6 @@ nova_jogada:
 	sw	t6, (t5)			# armazena em t5 o valor da pontuação atual de tiros
 	lw	t6, (t5)			# carrega o valor da pontuação atual de tiros em t6
 	
-	la 	s9, recorde_tiros		# carrega valor da memória do recorde de tiros em s9
-	lw	s10, (s9)			# carrega o valor do recorde de tiros em s10
-	
 	la 	a0, msg_inserir_linha		# inserir linha msg
 	li 	a7,4
 	ecall
@@ -615,7 +623,12 @@ nova_jogada:
 	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
 	ecall			
 	
+	la	a1, ultimo_tiro_linha		# carrega o valor da memória da linha do ultimo tiro
+	sw	a0, (a1)			# armazena a linha do ultimo tiro 
+	
 	add	a1, zero, a0			# salva valor da linha digitada em a1
+	
+	
 	
 	addi	a5, zero, 9
 	bgt  	a1, a5, linha_coluna_invalida	# se a1(linha) > a5(9), linha invalida 
@@ -627,6 +640,9 @@ nova_jogada:
 	
 	addi 	a7, zero, 5  			# le opcao que foi digitada e armazena em a0
 	ecall			
+
+	la	a2, ultimo_tiro_coluna		# carrega o valor da memória da coluna do ultimo tiro
+	sw	a0, (a2)			# armazena a coluna do ultimo tiro 	
 	
 	add	a2, zero, a0			# salva valor da coluna digitada em a2
 	bgt  	a2, a5, linha_coluna_invalida	# se a1(linha) > a5(9), linha invalida 
@@ -646,27 +662,12 @@ nova_jogada:
 	lw	t0, (s0)			# carrega o valor da matriz s0 em t0 na respectiva posição 
 	bgt  	t0, zero, acertou_navio		# se o valor da posicao da matriz for > 0, significa que possui um navio
 	
-	sw	a6, (s0)			# salva o valor -8 na posição, indicando que errou do navio
-
-	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
+	sw	a6, (s0)			# salva o valor 45 na posição, indicando que errou do navio
 	
 	jal	atualizar_regs_para_ver_se_navio_afundou
 	jal	verifica_se_navio_afundou
-	
+
 	j exibe_menu
-
-#############################################################	
-#
-# novo_recorde_tiros
-# função responsável armazenar 
-# o novo recorde de tiros
-#
-#############################################################				
-novo_recorde_tiros:
-	sw	t6, (s9)			# salva o novo recorde de tiros
-	jal	atualizar_regs_para_ver_se_navio_afundou
-	jal	verifica_se_navio_afundou
-	j	exibe_menu
 
 #############################################################	
 #
@@ -691,6 +692,9 @@ linha_coluna_invalida:
 #
 #############################################################					
 acertou_navio:
+	addi	a2, zero, 45			# valor 45 se refere ao caracter "-", que significa que errou o tiro
+	beq  	t0, a2, errou_navio		# se o valor atual da matriz for -8, significa que ele já atirou ali onde não havia navios
+	
 	sw	a5, (s0)			# salva o valor 88 na posição, indicando que acertou do navio
 	
 	
@@ -698,30 +702,23 @@ acertou_navio:
 	sw	t3, (s6)
 	lw	t3, (s6)
 		
-	la 	s2, recorde_acertos
-	lw	t2, (s2)
-	
-	bgt 	t3, t2, novo_recorde_acertos
-	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
-	
 	jal	atualizar_regs_para_ver_se_navio_afundou
 	jal	verifica_se_navio_afundou
 	
 	j exibe_menu
-
+	
 #############################################################	
 #
-# novo_recorde_acertos
-# função responsável armazenar 
-# o novo recorde de acertos
+# errou_navio
+# função chamada no local onde já errou o tiro 
 #
 #############################################################	
-novo_recorde_acertos:
-	sw	t3, (s2)			# salva novo recorde de acertos
-	bgt 	t6, s10, novo_recorde_tiros	# se a pontuação atual de tiros(t6) > recorde tiros(s10), então salva novo recorde de tiros	
+errou_navio:
+	
 	jal	atualizar_regs_para_ver_se_navio_afundou
 	jal	verifica_se_navio_afundou
-	j	exibe_menu
+
+	j exibe_menu
 
 #############################################################	
 #
@@ -792,6 +789,25 @@ imprime_pontuacoes:
 	li 	a7,4
 	ecall
 
+	la	s6, pont_atual_afundados	# carrega o endereço de memória da pontuação atual de navios afundados em s6
+	lw	t3, (s6)			# carrega o valor da pontuação atual de navios afundados em t3
+	la 	s2, qnt_navios			# carrega o endereço de memória da quantidade de navios em s2		
+	lw	t2, (s2)			# carrega o valor da quantidade de navios em t2
+	addi	t2, t2, -1			# decrementa qnt de navio, pois estava em +1
+	
+	beq	t3, t2, verificar_se_eh_novo_recorde	# se a quantidade de navios afundados for igual a quantidade de navios 
+							# inseridos, significa que todos os navios foram derrubados. Então verificamos	
+							# se é novo recorde
+	
+	j	continuacao_imprime_pontuacao							
+
+#############################################################	
+#
+# continuacao_imprime_pontuacao
+# continua a impressão das pontuações recordes e atuais
+#
+#############################################################		
+continuacao_imprime_pontuacao:
 	la 	a0, msg_recorde_tiros			
 	li 	a7,4
 	ecall
@@ -850,6 +866,27 @@ imprime_pontuacoes:
 	mv 	a0, t3  			# imprime a pontuação atual de navios afundados
 	li 	a7, 1		
 	ecall
+	
+	la 	a0, msg_pont_atual_linha_coluna		
+	li 	a7,4
+	ecall
+	
+
+	
+	la	s6, ultimo_tiro_linha			# carrega o endereço de memória da linha do ultimo tiro em s6
+	lw	t3, (s6)				# carrega o valor da linha do ultimo tiro em t3
+	addi	s2, zero, -1				# seta s2 com -1
+	
+	beq	t3, s2, nao_ha_ultima_tiro_linha_coluna	# se t3 (linha ultimo tiro) = s2 (-1), o jogo ainda não possui linha e coluna do último tiro		
+	
+	mv 	a0, t3  				# imprime a linha do ultimo tiro
+	li 	a7, 1		
+	ecall
+	la	s6, ultimo_tiro_coluna		# carrega o endereço de memória da linha do ultimo tiro em s6
+	lw	t3, (s6)			# carrega o valor da linha do ultimo tiro em t3
+	mv 	a0, t3  			# imprime a linha do ultimo tiro
+	li 	a7, 1		
+	ecall
 		
 
 	la 	a0, msg_quebra_linha  		# imprime mensagem
@@ -863,7 +900,86 @@ imprime_pontuacoes:
 	li 	a7,4
 	ecall
 
-	j	imprime_matriz
+	j	imprime_matriz	
+
+#############################################################	
+#
+# verificar_se_eh_novo_recorde
+# função responsável por vertificar
+# se é novo recorde. Se for,
+# salva o novo recorde
+#
+#############################################################	
+verificar_se_eh_novo_recorde:
+	la 	s2, recorde_tiros		# carrega o endereço de memória do recorde de tiros em s2		
+	lw	t2, (s2)			# carrega o valor do recorde de tiros em t2	
+
+	la	t5, pont_atual_tiros		# carrega o endereço de memória da pontuação atual de tiros em t5
+	lw	t6, (t5)			# carrega o valor da pontuação atual de tiros em t5
+	
+	beq	t2, zero, salva_primeiro_recorde	# se t2 (recorde) = 0 (zero), significa que é o primeiro recorde
+	
+	bgt	t6, t2, continuacao_imprime_pontuacao	# se t6 (pont atual de tiros) > t2 (recorde de tiros), não é novo recorde
+	
+	j	salva_novo_recorde
+	
+#############################################################	
+#
+# salva_primeiro_recorde
+# salva o primeiro recorde
+#
+#############################################################	
+salva_primeiro_recorde:
+	j	salva_novo_recorde
+
+#############################################################	
+#
+# primeiro_recorde
+# salva novo recorde
+#
+#############################################################			
+salva_novo_recorde:
+	sw	t6, (s2)			# salva o valor da pontuação atual de tiros como novo recorde
+	
+	la	t5, pont_atual_acertos		# carrega o endereço de memória da pontuação atual de acertos em t5
+	lw	t6, (t5)			# carrega o valor da pontuação atual de acertos em t5
+	la 	s2, recorde_acertos		# carrega o endereço de memória do recorde de acertos em s2
+	sw	t6, (s2)			# salva novo recorde de acertos
+	
+	la	t5, pont_atual_afundados	# carrega o endereço de memória da pontuação atual de afundados em t5
+	lw	t6, (t5)			# carrega o valor da pontuação atual de afundados em t5
+	la 	s2, recorde_afundados		# carrega o endereço de memória do recorde de afundados em s2
+	sw	t6, (s2)			# salva novo recorde de afundados	
+	
+	j	continuacao_imprime_pontuacao	
+
+#############################################################	
+#
+# nao_ha_ultima_tiro_linha_coluna
+# se ainda não fez o primeiro tiro
+# nçao tem a informação da linha
+# e coluna do último tiro
+#
+#############################################################		
+nao_ha_ultima_tiro_linha_coluna:
+
+	la 	a0, msg_nao_ha_ultima_tiro_linha_coluna 		# imprime mensagem
+	li 	a7,4
+	ecall
+		
+
+	la 	a0, msg_quebra_linha  		# imprime mensagem
+	li 	a7,4
+	ecall
+	la 	a0, msg_quebra_linha  		# imprime mensagem
+	li 	a7,4
+	ecall
+	
+	la 	a0, msg_exibir_matriz_atual			
+	li 	a7,4
+	ecall
+
+	j	imprime_matriz	
 	
 #############################################################	
 #
@@ -891,16 +1007,31 @@ verifica_se_navio_afundou:
 navio_totalmente_afundado:
 	la	s6, pont_atual_afundados		# carrega o valor da memória do pont_atual_afundados no registrador s6
 	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
+	
+	la 	s2, qnt_navios			# carrega o endereço de memória da quantidade de navios em s2		
+	lw	t2, (s2)			# carrega o valor da quantidade de navios em t2
+	addi	t2, t2, -1			# decrementa qnt de navio, pois estava em +1
+	
+	beq	t3, t2, todos_navios_afundados	# se t3 (navios afundados) = t2 (qnt_navios), significa que ja afundou todos os navios 
+	
 	addi	t3, t3, 1				# incrementa o valor atual de navio afundados em 1 no registrador t3
 	sw	t3, (s6)				# salva o valor atual de navios afundados na memória do registrador s6 (pont_atual_afundados)
 	lw	t3, (s6)				# carrega o valor atual de navios afundados no registrador t3
-		
-	la 	s2, recorde_afundados			# carrega o valor da memória do recorde_afundados no registrador s2
-	lw	t2, (s2)				# carrega o valor de recordes de navios afundados no registrador t2
-	
-	bgt 	t3, t2, novo_recorde_afundados 		# se a pontuação atual de afundados(t3) > recorde afundados(t2), então salva novo recorde de afundados	
 	
 	j 	atualiza_regs_para_verificar_se_prox_navio_afundou
+
+#############################################################	
+#
+# todos_navios_afundados
+# imprime mensagem que todos os navios foram afundados
+#
+#############################################################	
+todos_navios_afundados:
+	la 	a0, msg_todos_navios_afundados		# imprime mensagem
+	li 	a7,4
+	ecall	
+	
+	j exibe_menu	
 
 #############################################################	
 #
@@ -996,6 +1127,10 @@ reinicia_registradores:
 	sw	zero, (t5)			# zera a pontuação atual dos tiros
 	la	s6, pont_atual_afundados
 	sw	zero, (s6)			# zera a pontuação atual de navios afundados
+	la	s6, ultimo_tiro_linha
+	sw	zero, (s6)
+	la	s6, ultimo_tiro_coluna
+	sw	zero, (s6)
 	addi	t0, zero, 0
 	addi	t1, zero, 0
 	addi	t2, zero, 0
