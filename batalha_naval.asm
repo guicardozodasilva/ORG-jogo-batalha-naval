@@ -10,7 +10,8 @@
 	.data
 matriz: 			.space 400					#tamanho total da matriz (10x10x4=400)
 #navios:			.asciz	"3\n1 5 1 1\n0 5 2 2\n0 1 6 4" 		#string para inserção dos navios
-navios:				.asciz	"1\n0 1 0 0"
+#navios:				.asciz	"1\n0 1 0 0"
+navios:				.asciz	"2\n1 4 2 2\n0 3 3 0"
 #navios:				.asciz	"11\n1 5 1 1\n0 5 2 2\n0 1 6 4\n0 1 9 9\n0 1 9 8\n0 1 9 7\n0 1 9 6\n0 1 9 5\n0 1 9 4\n0 1 9 3\n0 1 0 0"  		#string para inserção dos navios
 numeros:			.asciz	"0123456789"
 msg_quebra_linha:		.asciz "\n"
@@ -23,7 +24,7 @@ msg_menu:			.asciz	"\n\nDigite a opcao que deseja:\n1-Nova jogada\n2-Mostrar est
 msg_menu_fim_jogo:			.asciz	"\n\nDigite a opcao que deseja:\n1-Mostrar estado atual da matriz\n2-Mostrar matriz com as posições dos navios\n3-Reiniciar jogo\n4-Sair do jogo\n\n"
 msg_inserir_linha:		.asciz	"\n\nInsira a linha (valor entre 0 e 9)\n"
 msg_inserir_coluna:		.asciz	"\nInsira a coluna (valor entre 0 e 9)\n"
-msg_fim_jogo:			.asciz	"\n\nVoce optou por sair do jogo :(\n"
+msg_fim_jogo:			.asciz	"\n\nJogo finalizado!\n"
 msg_exibir_matriz_atual:	.asciz	"\n\nAbaixo está a matriz atual\n\n"
 msg_jogo_reiniciado:		.asciz	"\n\nJogo reiniciado!\n\n"
 msg_main:			.asciz	"\n\nEntrou no main!\n"
@@ -378,6 +379,8 @@ erro_navio_grande:
 	ecall
 	
 	ebreak
+	
+	j	finaliza_jogo
 
 #############################################################	
 #
@@ -394,6 +397,7 @@ insere_embarcacoes:
 	sw	t3, (s0)				# salva o valor da embarcacão na posição vertical
 	addi	s0, s0, 40				# incrementa o s0 em 1 e vai para a próxima posição vertical do navio
 	addi	s10, s10, 1 				# incrementa o s10 em 1
+	addi	s7, s7, 1				# incrementa em 1 o valor da linha 
 	j	insere_embarcacoes
 
 #############################################################	
@@ -407,6 +411,7 @@ insere_embarcacoes_horizontal:
 	sw	t3, (s0)			# salva o valor da embarcacão na posição
 	addi	s0, s0, 4			# incrementa o s0 em 1 e vai para a próxima posição horizontal do navio
 	addi	s10, s10, 1 			# incrementa o s10 em 1
+	addi	s9, s9, 1			# incrementa em 1 o valor da coluna 
 	j	insere_embarcacoes
 
 #############################################################	
@@ -452,6 +457,8 @@ erro_posicao_ocupada:
 	
 	ebreak
 
+	j	finaliza_jogo
+	
 #############################################################	
 #
 # imprime_matriz
