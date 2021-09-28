@@ -113,7 +113,8 @@ zera_matriz:
 qnt_embarcacoes:
 	addi	a2, zero, 0			# zera a2, pois usaremos no for usado na função percorre_string_navios
 	lb	t1, (s1)			# atualiza da string navios s1 em t1
-	beq	t1, a4, calc_qnt_embarcacoes	# se t1(valor atual da string navios) for = a4 (10 é \n na tabela ascii), significa que já lemos a qnt_navios
+	beq	t1, a4, calc_qnt_embarcacoes	# se t1(valor atual da string navios) for = a4 (10 é \n na tabela ascii), significa que 
+						# já lemos a qnt_navios
 	beq	s7, zero, primeiro_caracter 	# s7 = 0, então está no primeiro caracter da string navios
 	
 	addi	s7, s7, 1			# incrementa s7 
